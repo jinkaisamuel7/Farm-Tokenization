@@ -3,6 +3,7 @@
 (define-constant err-not-found (err u101))
 (define-constant err-invalid-amount (err u102))
 (define-constant err-unauthorized (err u103))
+(define-constant err-no-earnings (err u104))
 
 (define-data-var total-farms uint u0)
 
@@ -31,6 +32,19 @@
 (define-map InvestorPortfolio
     principal
     (list 50 uint)
+)
+
+(define-map FarmRevenue
+    uint
+    { total-distributed: uint }
+)
+
+(define-map InvestorEarnings
+    {
+        farm-id: uint,
+        investor: principal,
+    }
+    { earnings: uint }
 )
 
 (define-public (register-farm
@@ -171,4 +185,110 @@
 
 (define-read-only (get-total-farms)
     (var-get total-farms)
+)
+
+(define-public (distribute-revenue
+        (farm-id uint)
+        (amount uint)
+    )
+    (let (
+            (farm (unwrap! (map-get? Farms farm-id) err-not-found))
+            (total-shares (get total-shares farm))
+            (sold-shares (- total-shares (get available-shares farm)))
+        )
+        (asserts! (is-eq tx-sender (get owner farm)) err-owner-only)
+        (asserts! (> amount u0) err-invalid-amount)
+        (asserts! (> sold-shares u0) err-invalid-amount)
+        (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+        (map-set FarmRevenue farm-id { total-distributed: (+ (default-to u0 (get total-distributed (map-get? FarmRevenue farm-id)))
+            amount
+        ) }
+        )
+        (ok true)
+    )
+)
+
+(define-public (claim-earnings (farm-id uint))
+    (let (
+            (farm (unwrap! (map-get? Farms farm-id) err-not-found))
+            (shares (unwrap!
+                (map-get? FarmShares {
+                    farm-id: farm-id,
+                    investor: tx-sender,
+                })
+                err-not-found
+            ))
+            (total-shares (get total-shares farm))
+            (sold-shares (- total-shares (get available-shares farm)))
+            (total-distributed (default-to u0 (get total-distributed (map-get? FarmRevenue farm-id))))
+            (investor-share (* total-distributed (get shares shares)))
+            (earnings-owed (/ investor-share sold-shares))
+            (claimed-earnings (default-to u0
+                (get earnings
+                    (map-get? InvestorEarnings {
+                        farm-id: farm-id,
+                        investor: tx-sender,
+                    })
+                )))
+            (unclaimed-earnings (- earnings-owed claimed-earnings))
+        )
+        (asserts! (> unclaimed-earnings u0) err-no-earnings)
+        (try! (as-contract (stx-transfer? unclaimed-earnings tx-sender tx-sender)))
+        (map-set InvestorEarnings {
+            farm-id: farm-id,
+            investor: tx-sender,
+        } { earnings: earnings-owed }
+        )
+        (ok unclaimed-earnings)
+    )
+)
+
+(define-read-only (get-farm-revenue (farm-id uint))
+    (map-get? FarmRevenue farm-id)
+)
+
+(define-read-only (get-investor-earnings
+        (farm-id uint)
+        (investor principal)
+    )
+    (map-get? InvestorEarnings {
+        farm-id: farm-id,
+        investor: investor,
+    })
+)
+
+(define-read-only (calculate-pending-earnings
+        (farm-id uint)
+        (investor principal)
+    )
+    (match (map-get? Farms farm-id)
+        farm (match (map-get? FarmShares {
+            farm-id: farm-id,
+            investor: investor,
+        })
+            shares (let (
+                    (total-shares (get total-shares farm))
+                    (sold-shares (- total-shares (get available-shares farm)))
+                    (total-distributed (default-to u0
+                        (get total-distributed (map-get? FarmRevenue farm-id))
+                    ))
+                    (investor-share (* total-distributed (get shares shares)))
+                    (earnings-owed (if (> sold-shares u0)
+                        (/ investor-share sold-shares)
+                        u0
+                    ))
+                    (claimed-earnings (default-to u0
+                        (get earnings
+                            (map-get? InvestorEarnings {
+                                farm-id: farm-id,
+                                investor: investor,
+                            })
+                        )))
+                )
+                (some (- earnings-owed claimed-earnings))
+            )
+            none
+        )
+        none
+    )
 )
