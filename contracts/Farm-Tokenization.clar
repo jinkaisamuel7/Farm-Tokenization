@@ -4,6 +4,10 @@
 (define-constant err-invalid-amount (err u102))
 (define-constant err-unauthorized (err u103))
 (define-constant err-no-earnings (err u104))
+(define-constant err-insufficient-shares (err u105))
+(define-constant err-invalid-duration (err u106))
+(define-constant err-stake-active (err u107))
+(define-constant err-stake-locked (err u108))
 
 (define-data-var total-farms uint u0)
 
@@ -45,6 +49,27 @@
         investor: principal,
     }
     { earnings: uint }
+)
+
+(define-map StakedShares
+    {
+        farm-id: uint,
+        investor: principal,
+    }
+    {
+        staked-amount: uint,
+        stake-start: uint,
+        stake-duration: uint,
+        reward-multiplier: uint,
+    }
+)
+
+(define-map StakingRewards
+    {
+        farm-id: uint,
+        investor: principal,
+    }
+    { total-rewards: uint }
 )
 
 (define-public (register-farm
@@ -291,4 +316,164 @@
         )
         none
     )
+)
+
+(define-public (stake-shares
+        (farm-id uint)
+        (share-count uint)
+        (duration uint)
+    )
+    (let (
+            (current-shares (unwrap!
+                (map-get? FarmShares {
+                    farm-id: farm-id,
+                    investor: tx-sender,
+                })
+                err-not-found
+            ))
+            (existing-stake (map-get? StakedShares {
+                farm-id: farm-id,
+                investor: tx-sender,
+            }))
+            (multiplier (get-reward-multiplier duration))
+        )
+        (asserts! (is-none existing-stake) err-stake-active)
+        (asserts! (>= (get shares current-shares) share-count)
+            err-insufficient-shares
+        )
+        (asserts!
+            (or
+                (is-eq duration u30)
+                (is-eq duration u90)
+                (is-eq duration u180)
+                (is-eq duration u365)
+            )
+            err-invalid-duration
+        )
+        (map-set StakedShares {
+            farm-id: farm-id,
+            investor: tx-sender,
+        } {
+            staked-amount: share-count,
+            stake-start: stacks-block-height,
+            stake-duration: duration,
+            reward-multiplier: multiplier,
+        })
+        (ok true)
+    )
+)
+
+(define-public (unstake-shares (farm-id uint))
+    (let (
+            (stake-info (unwrap!
+                (map-get? StakedShares {
+                    farm-id: farm-id,
+                    investor: tx-sender,
+                })
+                err-not-found
+            ))
+            (blocks-staked (- stacks-block-height (get stake-start stake-info)))
+            (required-blocks (* (get stake-duration stake-info) u144))
+        )
+        (asserts! (>= blocks-staked required-blocks) err-stake-locked)
+        (map-delete StakedShares {
+            farm-id: farm-id,
+            investor: tx-sender,
+        })
+        (ok (get staked-amount stake-info))
+    )
+)
+
+(define-public (claim-staking-rewards (farm-id uint))
+    (let (
+            (stake-info (unwrap!
+                (map-get? StakedShares {
+                    farm-id: farm-id,
+                    investor: tx-sender,
+                })
+                err-not-found
+            ))
+            (blocks-staked (- stacks-block-height (get stake-start stake-info)))
+            (required-blocks (* (get stake-duration stake-info) u144))
+            (reward-amount (calculate-staking-reward farm-id tx-sender))
+        )
+        (asserts! (>= blocks-staked required-blocks) err-stake-locked)
+        (asserts! (> reward-amount u0) err-no-earnings)
+        (try! (as-contract (stx-transfer? reward-amount tx-sender tx-sender)))
+        (map-set StakingRewards {
+            farm-id: farm-id,
+            investor: tx-sender,
+        } { total-rewards: (+
+            (default-to u0
+                (get total-rewards
+                    (map-get? StakingRewards {
+                        farm-id: farm-id,
+                        investor: tx-sender,
+                    })
+                ))
+            reward-amount
+        ) }
+        )
+        (ok reward-amount)
+    )
+)
+
+(define-private (get-reward-multiplier (duration uint))
+    (if (is-eq duration u30)
+        u110
+        (if (is-eq duration u90)
+            u125
+            (if (is-eq duration u180)
+                u150
+                u200
+            )
+        )
+    )
+)
+
+(define-private (calculate-staking-reward
+        (farm-id uint)
+        (investor principal)
+    )
+    (match (map-get? StakedShares {
+        farm-id: farm-id,
+        investor: investor,
+    })
+        stake-info (let (
+                (base-reward (* (get staked-amount stake-info) u1000))
+                (multiplier (get reward-multiplier stake-info))
+                (blocks-staked (- stacks-block-height (get stake-start stake-info)))
+                (reward-per-block (/ (* base-reward multiplier) u100))
+            )
+            (/ (* reward-per-block blocks-staked) u144)
+        )
+        u0
+    )
+)
+
+(define-read-only (get-stake-info
+        (farm-id uint)
+        (investor principal)
+    )
+    (map-get? StakedShares {
+        farm-id: farm-id,
+        investor: investor,
+    })
+)
+
+(define-read-only (get-staking-rewards
+        (farm-id uint)
+        (investor principal)
+    )
+    (map-get? StakingRewards {
+        farm-id: farm-id,
+        investor: investor,
+    })
+)
+
+(define-read-only (calculate-pending-staking-rewards
+        (farm-id uint)
+        (investor principal)
+    )
+    (some (calculate-staking-reward farm-id investor))
 )
