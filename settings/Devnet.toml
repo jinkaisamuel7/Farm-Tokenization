@@ -1,0 +1,51 @@
+[network]
+name = "devnet"
+deployment_fee_rate = 10
+
+[accounts.deployer]
+mnemonic = "twice kind fence tip hidden tilt action fragile skin nothing glory cousin green tomorrow spring wrist shed math olympic multiply hip blue scout claw"
+balance = 100000000000000
+# Secret key: 753b7cc01a1a2e86221266a154af739463fce51219d97e4f856cd7200c3bd2a601
+# Public key: 0216a7fa68bc7c4fac0b11e9e8531e1c31aad9c69a67c3e3e8d8a4dd79a7cd15a9
+# Address: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+
+[accounts.wallet_1]
+mnemonic = "sell invite acquire kitten bamboo drastic junk limb beach second opinion grow sleep legend much rival overcome retire museum forty hungry surface wealthy punk"
+balance = 100000000000000
+# Secret key: 7287ba251d44a4d3fd9276c88ce34c5c52a038955511cccaf77e61068649c17801
+# Public key: 035874465619b7d7dcfd0b4b9a8c9e10e3e5c543e86f02ba4ad9c99bd51abc9a31
+# Address: ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5
+
+[accounts.wallet_2]
+mnemonic = "hold excess usual excess ring elephant install account glad dry fragile donkey gaze humble truck breeze nation gasp vacuum limb head keep delay hospital"
+balance = 100000000000000
+# Secret key: 530d9f61984c888536871c6573073bdfc0058896dc1adfe9a6a10dfacadc209101
+# Public key: 03adb8de4bfb65db2f2e5d927d0e8c97a25bb1bb1a6b2bd04fd2c8b8b1c3a3df35
+# Address: ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG
+
+[accounts.wallet_3]
+mnemonic = "cycle puppy glare enroll cost improve round trend wrist mushroom scorpion tower claim oppose clever elephant dinosaur eight problem before frozen dune wagon high"
+balance = 100000000000000
+# Secret key: d655b2523bcd65e34889725c73064feb17ceb796831c0e111ba1a552b0f31b3901
+# Public key: 03ba7b83fa62ccdc76a8b5cd72b7e2d6b62b70d0f35e3f6c5f6cc3a5f1d69a51be
+# Address: ST2JHG361ZXG51QTKY2NQCVBPPRRE2KZB1HR05NNC
+
+[accounts.wallet_4]
+mnemonic = "board list obtain sugar hour worth raven scout denial thunder horse logic fury scorpion fold genuine phrase wealth news aim below celery when cabin"
+balance = 100000000000000
+# Secret key: f9d7206a47f14d2870c163ebab4bf3e70d18f5d14ce1031f3902fbbc894fe4c701
+# Public key: 02f74c37a6a5aec6b8c3f5b1c8e8c0b4b0e9e5b4b5b0b2b5b6b0b5b1b2b5b6b0
+# Address: ST2NEB84ASENDXKYGJPQW86YXQCEFEX2ZQPG87ND
+
+[accounts.wallet_5]
+mnemonic = "hurry aunt blame peanut heavy update captain human rice crime juice adult scale device promote vast project quiz unit note reform update climb purchase"
+balance = 100000000000000
+# Secret key: 3eccc5dda8056043e4cc9262cc66bea475e9bb54f5c4b38c0f4b7b3a1c9af2ee01
+# Public key: 02e7d5cd9c2a5b9c3e9c8b7b3e8c9c7b5b6b0b5b1b2b5b6b0b5b1b2b5b6b0
+# Address: ST2REHHS5J3CERCRBEPMGH7921Q6PYKAADT7JP2VB
+
+[contracts]
+
+[devnet]
+stx_address = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"
+btc_address = "mqVnk6NPRdhntvfm4hh9vvjiRkFDUuSYsH"
