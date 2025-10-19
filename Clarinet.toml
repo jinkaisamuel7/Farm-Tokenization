@@ -1,0 +1,25 @@
+[project]
+name = 'Farm-Tokenization'
+description = 'A smart contract platform for farm tokenization with integrated insurance features'
+authors = ['jinkaisamuel7@gmail.com']
+telemetry = true
+cache_dir = './.cache'
+requirements = []
+
+[contracts.Farm-Tokenization]
+path = 'contracts/Farm-Tokenization.clar'
+clarity_version = 3
+epoch = 3.1
+
+[repl.analysis]
+passes = ['check_checker']
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false
+
+[repl.remote_data]
+enabled = false
+api_url = 'https://api.hiro.so'
